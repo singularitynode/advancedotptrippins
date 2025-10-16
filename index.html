@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Quantum Glass Auth</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0c0c0c;
+            --bg-secondary: #1a1a2e;
+            --accent-glow: #00d4ff;
+            --text-primary: #fff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --glass-outer: rgba(255, 255, 255, 0.02);
+            --glass-inner: rgba(255, 255, 255, 0.05);
+            --border-glow: rgba(255, 255, 255, 0.08);
+            --error-red: #ff007f;
+            --success-green: #00ff7f;
+            --shadow-black: rgba(0, 0, 0, 0.6);
+            --text-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px var(--accent-glow);
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: #000000; /* Black background */
+            --bg-secondary: #001122; /* Dark blue tint */
+            --accent-glow: #add8e6; /* Light blue accent */
+            --text-primary: #ffd700; /* Glowing gold */
+            --text-secondary: rgba(255, 215, 0, 0.8); /* Gold secondary */
+            --glass-outer: rgba(255, 255, 255, 0.15); /* Semi-transparent white for glass */
+            --glass-inner: rgba(255, 255, 255, 0.08); /* Inner white tint */
+            --border-glow: rgba(173, 216, 230, 0.4); /* Light blue border glow */
+            --error-red: #cc0033;
+            --success-green: #008000;
+            --shadow-black: rgba(0, 0, 0, 0.8);
+            --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 215, 0, 0.6); /* Black shadow with gold glow */
+        }
+        
+        body {
+            font-family: 'Rajdhani', 'Orbitron', monospace;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            perspective: 1200px;
+            text-shadow: var(--text-shadow);
+        }
+        
+        /* Quantum 3D Background with Particles */
+        #quantum-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            opacity: 0.25;
+        }
+        
+        /* Futuristic Background Effects */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.15) 0%, transparent 50%);
+            animation: quantumShimmer 8s ease-in-out infinite alternate;
+            z-index: -1;
+            filter: blur(1.5px);
+        }
+        
+        @keyframes quantumShimmer {
+            0% { opacity: 0.4; transform: rotateY(0deg) scale(1); }
+            100% { opacity: 0.7; transform: rotateY(3deg) scale(1.01); }
+        }
+        
+        /* State-of-the-Art Glassmorphism Container - Ultra-Realistic Glass Effect */
+        .otp-container {
+            background: 
+                /* Outer frosted glass layer with subtle refraction */
+                linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                /* Inner glass shine and depth */
+                linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+                /* Multiple subtle layers for thickness and realism */
+                linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent),
+                linear-gradient(-135deg, rgba(0, 0, 0, 0.02), transparent),
+                /* Base glass tint */
+                var(--glass-outer),
+                var(--glass-inner);
+            backdrop-filter: blur(50px) saturate(180%) brightness(1.2) contrast(1.1);
+            -webkit-backdrop-filter: blur(50px) saturate(180%) brightness(1.2) contrast(1.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 
+                /* Ambient occlusion and outer glow for realism */
+                0 25px 50px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                /* Inner highlights and shadows for depth */
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+                inset 0 20px 40px rgba(0, 0, 0, 0.02),
+                inset 0 -20px 40px rgba(255, 255, 255, 0.02),
+                /* Subtle refraction glow */
+                0 0 60px rgba(255, 255, 255, 0.1);
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) translateZ(0px);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            user-select: none;
+            cursor: move;
+            transform-style: preserve-3d;
+        }
+        
+        .otp-container:hover {
+            transform: translate(-50%, -50%) translateZ(20px) rotateY(1deg) rotateX(0.5deg) scale(1.02);
+            box-shadow: 
+                0 35px 70px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+                inset 0 25px 50px rgba(0, 0, 0, 0.03),
+                inset 0 -25px 50px rgba(255, 255, 255, 0.03),
+                0 0 80px rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        
+        .otp-container:active {
+            transform: translate(-50%, -50%) translateZ(30px) rotateY(3deg) rotateX(1deg) scale(1.01);
+        }
+        
+        /* Theme Toggle - Enhanced Glassmorphism */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: 
+                linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+                var(--glass-outer),
+                var(--glass-inner);
+            backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            border: 1px solid var(--border-glow);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 1000;
+            box-shadow: 
+                0 15px 30px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+                0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.15) rotate(180deg) translateZ(10px);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+                0 0 30px rgba(255, 255, 255, 0.2);
+            border-color: var(--accent-glow);
+        }
+        
+        .theme-icon {
+            font-size: 1.4rem;
+            transition: opacity 0.3s ease;
+            text-shadow: inherit;
+        }
+        
+        /* Title with enhanced glow */
+        .title {
+            font-size: 1.9rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: var(--text-shadow), 0 0 15px var(--accent-glow);
+            animation: titleGlow 2.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            0% { text-shadow: var(--text-shadow), 0 0 15px var(--accent-glow); }
+            100% { text-shadow: var(--text-shadow), 0 0 25px var(--accent-glow), 0 0 35px rgba(120, 219, 255, 0.3); }
+        }
+        
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 1.4;
+            text-shadow: var(--text-shadow);
+        }
+        
+        /* OTP Inputs - Ultra Glassmorphic */
+        .otp-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .otp-input {
+            width: 60px;
+            height: 60px;
+            background: 
+                linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+                var(--glass-outer),
+                var(--glass-inner);
+            backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            outline: none;
+            box-shadow: 
+                0 8px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+            text-shadow: var(--text-shadow);
+        }
+        
+        .otp-input:focus {
+            border-color: var(--accent-glow);
+            box-shadow: 
+                0 12px 24px rgba(0, 0, 0, 0.2),
+                0 0 20px rgba(var(--accent-glow), 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+            transform: scale(1.05) rotateY(5deg) translateZ(5px);
+            animation: inputPulse 0.2s ease-in-out 2;
+        }
+        
+        @keyframes inputPulse {
+            0%, 100% { transform: scale(1.05) rotateY(5deg); }
+            50% { transform: scale(1.08) rotateY(7deg); }
+        }
+        
+        .otp-input::placeholder {
+            color: var(--text-secondary);
+            text-shadow: none;
+        }
+        
+        /* Verify Button - Ultra Glassmorphic */
+        .verify-btn {
+            width: 100%;
+            height: 50px;
+            background: 
+                linear-gradient(135deg, var(--accent-glow) 0%, rgba(0, 153, 204, 0.8) 100%),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                var(--glass-outer),
+                var(--glass-inner);
+            backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+                0 0 20px rgba(var(--accent-glow), 0.2);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .verify-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+        
+        .verify-btn:hover::before {
+            left: 100%;
+        }
+        
+        .verify-btn:hover {
+            transform: translateY(-3px) rotateY(5deg) translateZ(10px);
+            box-shadow: 
+                0 15px 30px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+                0 0 30px rgba(var(--accent-glow), 0.4);
+        }
+        
+        .verify-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Resend Link Container - Glassmorphic with Enhanced Clickable Effects */
+        .resend-container {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        
+        .resend-link {
+            color: var(--text-secondary);
+            text-decoration: underline dotted; /* Dotted underline for visibility */
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+            background: 
+                linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+                var(--glass-outer),
+                var(--glass-inner);
+            backdrop-filter: blur(20px) saturate(180%) brightness(1.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-glow);
+            box-shadow: 
+                0 5px 10px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+            text-shadow: var(--text-shadow);
+            cursor: pointer;
+            animation: resendPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes resendPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+        
+        .resend-link:hover {
+            color: var(--accent-glow);
+            text-decoration: underline solid;
+            box-shadow: 
+                0 8px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+                0 0 20px rgba(var(--accent-glow), 0.3);
+            transform: translateY(-1px) translateZ(5px) scale(1.05);
+            animation: none;
+        }
+        
+        .resend-timer {
+            color: var(--accent-glow);
+            font-weight: 700;
+            margin-left: 0.5rem;
+            text-shadow: var(--text-shadow);
+        }
+        
+        /* Success/Error Messages - Glassmorphic */
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            text-align: center;
+            font-size: 0.9rem;
+            animation: fadeIn 0.5s ease;
+            background: 
+                linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+                var(--glass-outer),
+                var(--glass-inner);
+            backdrop-filter: blur(30px) saturate(180%) brightness(1.2);
+            border: 1px solid var(--border-glow);
+            box-shadow: 
+                0 8px 16px rgba(0, 0, 0, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+            text-shadow: var(--text-shadow);
+        }
+        
+        .success {
+            border-color: rgba(0, 255, 127, 0.3);
+            color: var(--success-green);
+            box-shadow: 
+                0 12px 24px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(0, 255, 127, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+                0 0 25px rgba(0, 255, 127, 0.4);
+        }
+        
+        .error {
+            border-color: rgba(255, 0, 127, 0.3);
+            color: var(--error-red);
+            box-shadow: 
+                0 12px 24px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 0, 127, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+                0 0 25px rgba(255, 0, 127, 0.4);
+            animation: errorShake 0.5s ease-in-out;
+        }
+        
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0) rotateY(0deg); }
+            25% { transform: translateX(-3px) rotateY(-2deg); }
+            75% { transform: translateX(3px) rotateY(2deg); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) translateZ(-10px); }
+            to { opacity: 1; transform: translateY(0) translateZ(0px); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .otp-container {
+                margin: 1rem;
+                padding: 2rem;
+            }
+            
+            .otp-inputs {
+                gap: 0.5rem;
+            }
+            
+            .otp-input {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="quantum-canvas"></canvas>
+    
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle Theme">
+        <span class="theme-icon" id="themeIcon">🌙</span>
+    </button>
+    
+    <div class="otp-container" id="otpContainer">
+        <h1 class="title">Verify OTP</h1>
+        <p class="subtitle">4 digits Code has been sent to the mobile number that you provide, please input it below to verify your account</p>
+        
+        <div class="otp-inputs">
+            <input type="text" class="otp-input" maxlength="1" placeholder="-" data-index="0">
+            <input type="text" class="otp-input" maxlength="1" placeholder="-" data-index="1">
+            <input type="text" class="otp-input" maxlength="1" placeholder="-" data-index="2">
+            <input type="text" class="otp-input" maxlength="1" placeholder="-" data-index="3">
+        </div>
+        
+        <button class="verify-btn" id="verifyBtn">Verify</button>
+        
+        <div class="resend-container">
+            <a href="#" class="resend-link" id="resendLink">Don't receive the code? <span class="resend-timer" id="timer"></span>Resend</a>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // Quantum 3D Particle Background
+        const canvas = document.getElementById('quantum-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        let particles = [];
+        class QuantumParticle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = Math.random() * 0.5 - 0.25;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width) this.speedX = -this.speedX;
+                if (this.y < 0 || this.y > canvas.height) this.speedY = -this.speedY;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-glow');
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 100; i++) {
+                particles.push(new QuantumParticle());
+            }
+        }
+        
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        
+        initParticles();
+        animateParticles();
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+            // Update bounds on resize
+            updateBounds();
+        });
+        
+        // Theme Toggle - Fixed Reliability
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const body = document.body;
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        
+        // Initial Setup
+        body.setAttribute('data-theme', currentTheme);
+        themeIcon.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+        
+        themeToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent dragging interference
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', currentTheme);
+            themeIcon.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('theme', currentTheme);
+            // Re-init particles for theme color
+            initParticles();
+        });
+        
+        // Fixed Draggable Container - No Initial Jump, Slow Drag
+        const container = document.getElementById('otpContainer');
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+        const dragSpeedMultiplier = 0.3; // Slow dragging speed
+        let bounds = {};
+        
+        function updateBounds() {
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            bounds = { 
+                left: 20, 
+                right: window.innerWidth - containerWidth - 20, 
+                top: 20, 
+                bottom: window.innerHeight - containerHeight - 20 
+            };
+        }
+        
+        updateBounds(); // Initial bounds
+        
+        container.addEventListener('mousedown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return; // Don't drag if clicking interactive elements
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            // Get current pixel position without jump
+            const rect = container.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+            
+            // Set explicit pixel positioning
+            container.style.left = initialX + 'px';
+            container.style.top = initialY + 'px';
+            container.style.transform = 'translateZ(0px)'; // Remove percentage translate
+            
+            container.style.transition = 'none';
+            container.style.cursor = 'grabbing';
+            document.body.style.userSelect = 'none';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            let deltaX = (e.clientX - startX) * dragSpeedMultiplier; // Slow speed
+            let deltaY = (e.clientY - startY) * dragSpeedMultiplier; // Slow speed
+            let newX = initialX + deltaX;
+            let newY = initialY + deltaY;
+            
+            // Boundaries
+            newX = Math.max(bounds.left, Math.min(newX, bounds.right));
+            newY = Math.max(bounds.top, Math.min(newY, bounds.bottom));
+            
+            container.style.left = newX + 'px';
+            container.style.top = newY + 'px';
+            container.style.transform = `translateZ(10px) rotateY(${(newX - window.innerWidth / 2) * 0.0005}deg) rotateX(${(newY - window.innerHeight / 2) * 0.0005 * -1}deg)`; // Slower rotation
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                container.style.transition = 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                container.style.cursor = 'move';
+                document.body.style.userSelect = '';
+            }
+        });
+        
+        // Prevent dragging from inputs/buttons/links
+        const interactiveElements = document.querySelectorAll('input, button, a');
+        interactiveElements.forEach(el => {
+            el.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                isDragging = false; // Stop dragging when interacting
+            });
+            el.addEventListener('focus', () => {
+                isDragging = false;
+            });
+        });
+        
+        // Advanced OTP Input Handling (Numbers Only - Fixed Typing)
+        const inputs = document.querySelectorAll('.otp-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resendLink = document.getElementById('resendLink');
+        const timerEl = document.getElementById('timer');
+        const messageEl = document.getElementById('message');
+        
+        let countdown = 60;
+        let timerInterval;
+        let isResending = false;
+        
+        // Auto-focus first input
+        inputs[0].focus();
+        
+        // Input event listeners (Numbers only - Ensured typing works)
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                // Allow only numbers, backspace, tab, arrows
+                if (!((e.key >= '0' && e.key <= '9') || e.key === 'Backspace' || e.key === 'Tab' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                    e.preventDefault();
+                }
+            });
+            
+            input.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, ''); // Force numbers only
+                if (value && value.length === 1) {
+                    e.target.value = value;
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    } else {
+                        verifyBtn.focus();
+                    }
+                } else if (value.length > 1) {
+                    e.target.value = value.slice(0, 1);
+                } else {
+                    e.target.value = '';
+                }
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !input.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+            
+            // Paste handling for full OTP
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                const code = paste.replace(/\D/g, '').slice(0, 4);
+                if (code.length === 4) {
+                    code.split('').forEach((digit, i) => {
+                        if (inputs[i]) {
+                            inputs[i].value = digit;
+                        }
+                    });
+                    verifyBtn.focus();
+                }
+            });
+        });
+        
+        // Verify Button
+        verifyBtn.addEventListener('click', () => {
+            const code = Array.from(inputs).map(input => input.value).join('');
+            if (code.length === 4 && /^\d{4}$/.test(code)) {
+                showMessage('Verification successful! Welcome!', 'success');
+                verifyBtn.disabled = true;
+                verifyBtn.textContent = 'Verified ✓';
+                // Simulate API call - No redirect
+                setTimeout(() => {
+                    // window.location.href = '/dashboard'; // Commented out to prevent routing
+                }, 1500);
+            } else {
+                showMessage('Please enter a valid 4-digit code.', 'error');
+                inputs[0].focus();
+            }
+        });
+        
+        // Resend Functionality with Confirmation Text
+        resendLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (isResending || countdown > 0) return;
+            
+            isResending = true;
+            showMessage('Resending OTP code... Please wait.', 'success');
+            resendLink.style.opacity = '0.6';
+            resendLink.style.pointerEvents = 'none';
+            
+            // Simulate resend API call
+            setTimeout(() => {
+                showMessage('Code resent successfully! Check your phone.', 'success');
+                isResending = false;
+                startTimer();
+                resendLink.style.opacity = '1';
+            }, 1000);
+        });
+        
+        function startTimer() {
+            countdown = 60;
+            timerInterval = setInterval(() => {
+                if (countdown > 0) {
+                    timerEl.textContent = `(${countdown}s)`;
+                    resendLink.style.pointerEvents = 'none';
+                    countdown--;
+                } else {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = '';
+                    resendLink.style.pointerEvents = 'auto';
+                }
+            }, 1000);
+        }
+        
+        function showMessage(text, type) {
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            setTimeout(() => {
+                messageEl.textContent = '';
+                messageEl.className = '';
+            }, 3000);
+        }
+        
+        // Keyboard support for verify
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.activeElement === verifyBtn) {
+                verifyBtn.click();
+            }
+        });
+        
+        // Accessibility: ARIA labels
+        inputs.forEach((input, index) => {
+            input.setAttribute('aria-label', `OTP digit ${index + 1}`);
+        });
+        verifyBtn.setAttribute('aria-label', 'Verify OTP code');
+        resendLink.setAttribute('aria-label', 'Resend verification code');
+    </script>
+</body>
+</html>
